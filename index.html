@@ -63,6 +63,27 @@
             margin-top: 4px;
         }
 
+        /* Estilos para os filtros de gráficos */
+        .btn-filter {
+            flex: 1;
+            background: #1c1c1e;
+            border: 1px solid #333;
+            color: var(--text-gray);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-filter.active {
+            background: var(--primary-color);
+            color: #000;
+            border-color: var(--primary-color);
+        }
+
         #login-screen, #wait-screen { 
             position: fixed; 
             top: 0; left: 0; 
@@ -120,7 +141,6 @@
 
         .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px 20px; }
         
-        /* DESIGN PREMIUM CARD PRINCIPAL */
         .card-main { 
             grid-column: span 2; 
             background: linear-gradient(145deg, #242426 0%, #111112 100%); 
@@ -131,7 +151,6 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.4);
         }
         
-        /* DESIGN PREMIUM CARD ALUGUEL COM BARRA */
         .card-rent-config { 
             grid-column: span 2; 
             background: rgba(191, 90, 242, 0.08); 
@@ -155,7 +174,7 @@
         .rent-progress-bar {
             height: 100%;
             background: var(--rent-color);
-            width: 0%; /* Dinâmico */
+            width: 0%; 
             border-radius: 4px;
             transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             box-shadow: 0 0 10px var(--rent-color);
@@ -257,7 +276,7 @@
             <button class="btn-icon-nav" onclick="changeMonth(1)">▶</button>
         </div>
         
-        <div class="summary-grid">
+        <div class="summary-grid" id="main-dashboard-grid">
             <div class="card-main">
                 <span class="label">Faturamento Bruto Mensal</span>
                 <div class="value-big" id="dash-rev">R$ 0,00</div>
@@ -342,6 +361,28 @@
         </div>
     </div>
 
+    <div id="view-charts" class="hidden">
+        <div class="header-simple" style="padding: 20px;">
+            <h2 style="font-size:24px; font-weight:700;">Desempenho</h2>
+            <p style="color:#666; font-size:12px;">Análise gráfica dos seus ganhos</p>
+        </div>
+        
+        <div class="filter-container" style="display: flex; gap: 8px; padding: 0 20px; margin-bottom: 20px;">
+            <button class="btn-filter active" id="filter-day" onclick="updateChartFilter('day')">Dias</button>
+            <button class="btn-filter" id="filter-week" onclick="updateChartFilter('week')">Semanas</button>
+            <button class="btn-filter" id="filter-month" onclick="updateChartFilter('month')">Meses</button>
+        </div>
+
+        <div style="padding: 0 20px; margin-bottom: 25px;">
+            <div style="background: var(--card-color); padding: 15px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.05); height: 280px;">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+
+        <div id="chart-summary-cards" class="summary-grid">
+            </div>
+    </div>
+
     <div id="view-history" class="hidden">
         <div class="header-simple">
             <h2 style="font-size:24px; font-weight:700; padding: 20px 20px 0 20px;">Histórico</h2>
@@ -353,48 +394,11 @@
     <div id="view-day-detail" class="hidden">
         <div class="detail-header" style="padding: 20px; display: flex; align-items: center; border-bottom: 1px solid #333; background: #111;">
             <button class="btn-back" onclick="handleBackButton()" style="background: none; border: none; font-size: 24px; color: #fff; margin-right: 15px; cursor: pointer;">←</button>
-            <h2 id="detail-title">Detalhes do Dia</h2>
-            <button class="btn-text" onclick="editCurrentDay()" style="margin-left:auto; color:var(--primary-color);">✏️ Editar</button>
+            <h2 id="detail-title" style="font-size: 18px;">Detalhes do Dia</h2>
+            <button class="btn-text" onclick="editCurrentDay()" style="margin-left:auto; color:var(--primary-color); font-weight:bold;">✏️ Editar</button>
         </div>
-        <div class="summary-grid" style="margin-top:10px;">
-             <div class="card-rent-config" style="background: rgba(191, 90, 242, 0.15); cursor:default;">
-                <div class="rent-info-left">
-                    <span style="font-weight:bold; color:var(--rent-color); font-size:12px;">🟣 META DINÂMICA (HOJE)</span>
-                    <div style="font-size:10px; color:#aaa; margin-top:5px; line-height:1.2;" id="day-rent-math-expl">Calculando...</div>
-                </div>
-                <div class="rent-info-right">
-                    <span style="font-weight:800; font-size:18px; color:#fff;" id="day-rent-target-val">R$ 0</span>
-                </div>
-            </div>
-            <div class="card-main">
-                <span class="label">Lucro do Dia</span>
-                <div class="value-big" id="day-profit">R$ 0,00</div>
-            </div>
-            <div class="card-small">
-                <span class="label">Receita</span>
-                <div class="value-med text-green" id="day-rev">R$ 0,00</div>
-            </div>
-            <div class="card-small">
-                <span class="label">Custo Total</span>
-                <div class="value-med text-red" id="day-exp">R$ 0,00</div>
-            </div>
-            <div class="card-small">
-                <span class="label">⛽ Combustível</span>
-                <div class="value-med text-orange" id="day-fuel-val">R$ 0,00</div>
-            </div>
-            <div class="card-small">
-                <span class="label">🍔 Alimentação</span>
-                <div class="value-med text-red" id="day-food-val">R$ 0,00</div>
-            </div>
-            <div class="card-small">
-                <span class="label">🛠️ Manutenção</span>
-                <div class="value-med text-red" id="day-maint-val">R$ 0,00</div>
-            </div>
-            <div class="card-small">
-                <span class="label">🟣 Aluguel Pago</span>
-                <div class="value-med text-purple" id="day-rent-val">R$ 0,00</div>
-            </div>
-        </div>
+        <div class="summary-grid" id="detail-summary-grid" style="margin-top:15px;">
+             </div>
 
         <div class="performance-section">
             <div class="section-title">Estatísticas do Dia</div>
@@ -493,6 +497,9 @@
         <button class="nav-btn active" id="nav-home" onclick="switchTab('home')" style="background: none; border: none; color: #666; font-size: 10px; display: flex; flex-direction: column; align-items: center;">
             <span class="nav-icon" style="font-size: 20px; margin-bottom: 4px;">🏠</span>Início
         </button>
+        <button class="nav-btn" id="nav-charts" onclick="switchTab('charts')" style="background: none; border: none; color: #666; font-size: 10px; display: flex; flex-direction: column; align-items: center;">
+            <span class="nav-icon" style="font-size: 20px; margin-bottom: 4px;">📊</span>Gráficos
+        </button>
         <button class="add-btn" onclick="startWizard()" style="background: var(--primary-color); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #000; margin-top: -25px; border: 4px solid #000; box-shadow: 0 4px 12px rgba(0,230,118,0.4);">+</button>
         <button class="nav-btn" id="nav-hist" onclick="switchTab('history')" style="background: none; border: none; color: #666; font-size: 10px; display: flex; flex-direction: column; align-items: center;">
             <span class="nav-icon" style="font-size: 20px; margin-bottom: 4px;">📂</span>Histórico
@@ -502,6 +509,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         const steps = [
@@ -518,7 +526,8 @@
         ];
         const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
         let currentStep = 0, tempData = {}, viewDate = new Date(), editingIndex = null, currentDetailIndex = null;
-        
+        let myChart = null;
+
         const DB_KEY = 'app_motorista_BETA_FULL'; 
         const RENT_DB_KEY = 'rent_configs_BETA';
 
@@ -596,7 +605,7 @@
             if(!document.getElementById('wizard-overlay').classList.contains('hidden')) { toggleWizard(false); return; }
             if(!document.getElementById('view-day-detail').classList.contains('hidden')) { closeDayDetail(); return; }
             if(!document.getElementById('modal-rent').classList.contains('hidden')) { closeRentConfig(); return; }
-            if(!document.getElementById('view-history').classList.contains('hidden')) { switchTab('home'); return; }
+            if(!document.getElementById('view-history').classList.contains('hidden') || !document.getElementById('view-charts').classList.contains('hidden')) { switchTab('home'); return; }
         }
         function closeDayDetail() { document.getElementById('view-day-detail').classList.add('hidden'); }
 
@@ -656,7 +665,6 @@
             const tExp = tFuel + tFood + tRent + tMaint;
             const profit = tRev - tExp;
 
-            // ATUALIZAÇÃO DOS VALORES
             document.getElementById('dash-rev').innerText = formatMoney(tRev);
             document.getElementById('dash-profit').innerText = formatMoney(profit);
             document.getElementById('dash-exp').innerText = formatMoney(tExp);
@@ -665,7 +673,6 @@
             document.getElementById('dash-maint-val').innerText = formatMoney(tMaint);
             document.getElementById('dash-rent-paid-val').innerText = formatMoney(tRent);
 
-            // CÁLCULO DAS PORCENTAGENS INTEGRADAS (BASEADO NO BRUTO)
             const calcPct = (val) => tRev > 0 ? ((val / tRev) * 100).toFixed(1) + '%' : '0%';
             document.getElementById('dash-profit-pct').innerText = calcPct(profit);
             document.getElementById('dash-exp-pct').innerText = calcPct(tExp);
@@ -674,7 +681,6 @@
             document.getElementById('dash-maint-pct').innerText = calcPct(tMaint);
             document.getElementById('dash-rent-paid-pct').innerText = calcPct(tRent);
 
-            // BARRA DE PROGRESSO ALUGUEL
             const currentMonthConfig = getRentConfigForMonth(m, y);
             const rentTarget = currentMonthConfig.total || 0;
             const rentPct = rentTarget > 0 ? Math.min(100, (tRent / rentTarget) * 100) : 0;
@@ -686,35 +692,224 @@
             const remaining = Math.max(0, rentTarget - tRent);
             document.getElementById('dash-rent-status-text').innerText = remaining > 0 ? `Faltam ${formatMoney(remaining)}` : "Aluguel Quitado! 🎉";
 
-            // PERFORMANCE
             document.getElementById('dash-hours').innerText = tHours.toFixed(1) + "h";
             document.getElementById('dash-hourly').innerText = formatMoney(tHours > 0 ? profit / tHours : 0);
             document.getElementById('dash-km-val').innerText = formatMoney(tKm > 0 ? tRev / tKm : 0);
         }
 
+        // --- LÓGICA DE GRÁFICOS ---
+        function updateChartFilter(type) {
+            document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`filter-${type}`).classList.add('active');
+
+            const db = [...getDB()].reverse(); // Do mais antigo para o novo para o gráfico
+            let labels = [], values = [], summary = { rev:0, fuel:0, food:0, maint:0, rent:0 };
+
+            if (type === 'day') {
+                const last7 = db.slice(-7);
+                last7.forEach(d => {
+                    labels.push(d.date.split('/')[0]);
+                    const r = (d.uber||0)+(d.pop||0);
+                    values.push(r);
+                    summary.rev += r; summary.fuel += (d.fuel||0); summary.food += (d.food||0); summary.maint += (d.maintenance||0); summary.rent += (d.rentPaid||0);
+                });
+            } else if (type === 'week') {
+                const weekMap = {};
+                db.forEach(d => {
+                    const dateParts = d.date.split('/');
+                    const dateObj = new Date(dateParts[2], dateParts[1]-1, dateParts[0]);
+                    const weekNum = getWeekNumber(dateObj);
+                    const key = `Sem ${weekNum}`;
+                    if(!weekMap[key]) weekMap[key] = { rev:0, fuel:0, food:0, maint:0, rent:0 };
+                    const r = (d.uber||0)+(d.pop||0);
+                    weekMap[key].rev += r; weekMap[key].fuel += (d.fuel||0); weekMap[key].food += (d.food||0); weekMap[key].maint += (d.maintenance||0); weekMap[key].rent += (d.rentPaid||0);
+                });
+                const last4 = Object.keys(weekMap).slice(-4);
+                last4.forEach(k => {
+                    labels.push(k); values.push(weekMap[k].rev);
+                    summary.rev += weekMap[k].rev; summary.fuel += weekMap[k].fuel; summary.food += weekMap[k].food; summary.maint += weekMap[k].maint; summary.rent += weekMap[k].rent;
+                });
+            } else if (type === 'month') {
+                const monthMap = {};
+                db.forEach(d => {
+                    const p = d.date.split('/');
+                    const key = monthNames[parseInt(p[1])-1].substring(0,3);
+                    if(!monthMap[key]) monthMap[key] = { rev:0, fuel:0, food:0, maint:0, rent:0 };
+                    const r = (d.uber||0)+(d.pop||0);
+                    monthMap[key].rev += r; monthMap[key].fuel += (d.fuel||0); monthMap[key].food += (d.food||0); monthMap[key].maint += (d.maintenance||0); monthMap[key].rent += (d.rentPaid||0);
+                });
+                Object.keys(monthMap).forEach(k => {
+                    labels.push(k); values.push(monthMap[k].rev);
+                    summary.rev += monthMap[k].rev; summary.fuel += monthMap[k].fuel; summary.food += monthMap[k].food; summary.maint += monthMap[k].maint; summary.rent += monthMap[k].rent;
+                });
+            }
+
+            renderChart(labels, values);
+            renderChartSummary(summary);
+        }
+
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+        }
+
+        function renderChart(labels, values) {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: '#00E676',
+                        borderRadius: 6,
+                        barThickness: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#666', font: { size: 10 } } },
+                        x: { grid: { display: false }, ticks: { color: '#888', font: { size: 10, weight: 'bold' } } }
+                    }
+                }
+            });
+        }
+
+        function renderChartSummary(data) {
+            const exp = data.fuel + data.food + data.maint + data.rent;
+            const profit = data.rev - exp;
+            const calcPct = (val) => data.rev > 0 ? ((val / data.rev) * 100).toFixed(1) + '%' : '0%';
+            const container = document.getElementById('chart-summary-cards');
+            container.innerHTML = `
+                <div class="card-main">
+                    <span class="label">Receita do Período</span>
+                    <div class="value-big">${formatMoney(data.rev)}</div>
+                </div>
+                <div class="card-small">
+                    <span class="label">Lucro Líquido</span>
+                    <div class="value-med text-green">${formatMoney(profit)}</div>
+                    <div class="pct-tag text-green">${calcPct(profit)}</div>
+                </div>
+                <div class="card-small">
+                    <span class="label">Custo Total</span>
+                    <div class="value-med text-red">${formatMoney(exp)}</div>
+                    <div class="pct-tag text-red">${calcPct(exp)}</div>
+                </div>
+                <div class="card-small">
+                    <span class="label">⛽ Combustível</span>
+                    <div class="value-med text-orange">${formatMoney(data.fuel)}</div>
+                    <div class="pct-tag text-orange">${calcPct(data.fuel)}</div>
+                </div>
+                <div class="card-small">
+                    <span class="label">🟣 Aluguel</span>
+                    <div class="value-med text-purple">${formatMoney(data.rent)}</div>
+                    <div class="pct-tag text-purple">${calcPct(data.rent)}</div>
+                </div>
+            `;
+        }
+
+        // --- NAVEGAÇÃO ---
+        function switchTab(tab) {
+            document.getElementById('view-dashboard').classList.toggle('hidden', tab !== 'home');
+            document.getElementById('view-history').classList.toggle('hidden', tab !== 'history');
+            document.getElementById('view-charts').classList.toggle('hidden', tab !== 'charts');
+            document.getElementById('view-day-detail').classList.add('hidden'); 
+            
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                const isSelected = b.id === (tab==='home'?'nav-home':tab==='history'?'nav-hist':'nav-charts');
+                b.classList.toggle('active', isSelected);
+                b.style.color = isSelected ? 'var(--primary-color)' : '#666';
+            });
+
+            if(tab==='history') renderHistory(); 
+            else if(tab==='home') renderDashboard();
+            else if(tab==='charts') updateChartFilter('day');
+        }
+
         function openDayDetail(index) {
             window.history.pushState({modal: 'detail'}, "", ""); currentDetailIndex = index;
             const d = getDB()[index]; if(!d) return;
+            
             const rec = (d.uber||0)+(d.pop||0);
-            const luc = rec - ((d.fuel||0)+(d.food||0)+(d.rentPaid||0)+(d.maintenance||0));
+            const exp = (d.fuel||0)+(d.food||0)+(d.rentPaid||0)+(d.maintenance||0);
+            const luc = rec - exp;
+            const calcPct = (val) => rec > 0 ? ((val / rec) * 100).toFixed(1) + '%' : '0%';
+
+            document.getElementById('detail-title').innerText = `Resumo de ${d.date}`;
+            
+            // Injeção da hierarquia idêntica ao Dashboard
+            document.getElementById('detail-summary-grid').innerHTML = `
+                <div class="card-main">
+                    <span class="label">Faturamento Bruto</span>
+                    <div class="value-big">${formatMoney(rec)}</div>
+                </div>
+
+                <div class="card-rent-config" style="background: rgba(191, 90, 242, 0.15); cursor:default;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-weight:bold; color:var(--rent-color); font-size:11px; display:block; text-transform: uppercase;">🟣 Meta Dinâmica (Dia)</span>
+                            <span id="day-rent-math-expl" style="color:#aaa; font-size:10px;">Calculando...</span>
+                        </div>
+                        <span id="day-rent-target-val" style="font-weight:800; font-size:20px; color:#fff;">R$ 0</span>
+                    </div>
+                </div>
+
+                <div class="card-small">
+                    <span class="label">Lucro Líquido</span>
+                    <div class="value-med text-green">${formatMoney(luc)}</div>
+                    <div class="pct-tag text-green">${calcPct(luc)}</div>
+                </div>
+
+                <div class="card-small">
+                    <span class="label">Custo Total</span>
+                    <div class="value-med text-red">${formatMoney(exp)}</div>
+                    <div class="pct-tag text-red">${calcPct(exp)}</div>
+                </div>
+
+                <div class="card-small">
+                    <span class="label">⛽ Combustível</span>
+                    <div class="value-med text-orange">${formatMoney(d.fuel||0)}</div>
+                    <div class="pct-tag text-orange">${calcPct(d.fuel||0)}</div>
+                </div>
+
+                <div class="card-small">
+                    <span class="label">🟣 Aluguel Pago</span>
+                    <div class="value-med text-purple">${formatMoney(d.rentPaid||0)}</div>
+                    <div class="pct-tag text-purple">${calcPct(d.rentPaid||0)}</div>
+                </div>
+                
+                <div class="card-small">
+                    <span class="label">🍔 Alimentação</span>
+                    <div class="value-med text-red">${formatMoney(d.food||0)}</div>
+                    <div class="pct-tag text-red">${calcPct(d.food||0)}</div>
+                </div>
+
+                <div class="card-small">
+                    <span class="label">🛠️ Manutenção</span>
+                    <div class="value-med text-red">${formatMoney(d.maintenance||0)}</div>
+                    <div class="pct-tag text-red">${calcPct(d.maintenance||0)}</div>
+                </div>
+            `;
+
             let h = d.hours || 0;
             if(!h && d.hoursFormatted) { const [hh,mm] = d.hoursFormatted.split(':').map(Number); h = hh + (mm/60); }
             const km = d.km || 0;
-            document.getElementById('detail-title').innerText = `Detalhes: ${d.date}`;
-            document.getElementById('day-profit').innerText = formatMoney(luc);
-            document.getElementById('day-rev').innerText = formatMoney(rec);
-            document.getElementById('day-exp').innerText = formatMoney((d.fuel||0)+(d.food||0)+(d.rentPaid||0)+(d.maintenance||0));
-            document.getElementById('day-fuel-val').innerText = formatMoney(d.fuel||0);
-            document.getElementById('day-food-val').innerText = formatMoney(d.food||0);
-            document.getElementById('day-maint-val').innerText = formatMoney(d.maintenance || 0);
-            document.getElementById('day-rent-val').innerText = formatMoney(d.rentPaid||0);
+            
             document.getElementById('day-hours').innerText = h.toFixed(1) + "h";
             document.getElementById('day-hourly').innerText = formatMoney(h > 0 ? luc / h : 0);
             document.getElementById('day-km-val').innerText = formatMoney(km > 0 ? rec / km : 0);
+            
             const parts = d.date.split('/'); 
             const res = calculateTargetLogic(getRentConfigForMonth(parts[1]-1, parts[2]).total, getRentConfigForMonth(parts[1]-1, parts[2]).offDays, new Date(parts[2], parts[1]-1, parts[0]));
             document.getElementById('day-rent-target-val').innerText = formatMoney(res.target);
-            document.getElementById('day-rent-math-expl').innerText = `Faltam ${formatMoney(res.remaining)} para os ${res.daysLeft} dias restantes`;
+            document.getElementById('day-rent-math-expl').innerText = `Faltavam ${formatMoney(res.remaining)} para os ${res.daysLeft} dias restantes`;
+            
             document.getElementById('view-day-detail').classList.remove('hidden');
         }
 
@@ -722,14 +917,6 @@
         function getDB() { try { return JSON.parse(localStorage.getItem(DB_KEY)) || []; } catch { return []; } }
         function saveDB(data) { localStorage.setItem(DB_KEY, JSON.stringify(data)); }
         function changeMonth(dir) { viewDate.setMonth(viewDate.getMonth() + dir); renderDashboard(); }
-
-        function switchTab(tab) {
-            document.getElementById('view-dashboard').classList.toggle('hidden', tab !== 'home');
-            document.getElementById('view-history').classList.toggle('hidden', tab !== 'history');
-            document.getElementById('view-day-detail').classList.add('hidden'); 
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.id === (tab==='home'?'nav-home':'nav-hist')));
-            if(tab==='history') renderHistory(); else renderDashboard();
-        }
 
         function renderHistory() {
             const db = getDB(); const list = document.getElementById('history-list'); list.innerHTML = '';
