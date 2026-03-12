@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gestão Motorista V28 - BETA</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* --- CONFIGURAÇÃO VISUAL --- */
@@ -54,7 +57,6 @@
         }
         .btn-logout-new:active { transform: scale(0.95); background: var(--danger-color); color: #fff; }
 
-        /* NOVA CLASSE PARA PORCENTAGEM INTEGRADA */
         .pct-tag {
             font-size: 10px;
             font-weight: 800;
@@ -121,35 +123,6 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.4);
         }
         
-        .card-rent-config { 
-            grid-column: span 2; 
-            background: rgba(191, 90, 242, 0.08); 
-            border: 1px solid rgba(191, 90, 242, 0.3); 
-            padding: 20px; 
-            border-radius: 20px; 
-            cursor: pointer; 
-            transition: 0.2s; 
-            backdrop-filter: blur(10px);
-        }
-
-        .rent-progress-container {
-            width: 100%;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            margin: 12px 0;
-            overflow: hidden;
-        }
-
-        .rent-progress-bar {
-            height: 100%;
-            background: var(--rent-color);
-            width: 0%; 
-            border-radius: 4px;
-            transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 0 10px var(--rent-color);
-        }
-        
         .card-small { 
             background: var(--card-color); 
             padding: 16px; 
@@ -173,7 +146,6 @@
         .perf-val { font-size: 15px; font-weight: 800; color: #fff; margin-top: 6px; }
         .perf-icon { font-size: 22px; margin-bottom: 2px; }
 
-        /* ESTILOS ESPECÍFICOS PARA GRÁFICOS */
         .filter-container { display: flex; gap: 8px; padding: 10px 20px; justify-content: center; }
         .filter-btn { 
             background: #2c2c2e; border: 1px solid #444; color: #aaa; 
@@ -183,8 +155,6 @@
         .filter-btn.active { background: var(--primary-color); color: #000; border-color: var(--primary-color); }
         .chart-wrapper { padding: 10px 20px; background: #111; margin: 10px 20px; border-radius: 20px; height: 250px; border: 1px solid #222; }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; }
-
         #view-day-detail {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: var(--bg-color); z-index: 45; overflow-y: auto; padding-bottom: 90px;
@@ -192,7 +162,6 @@
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -225,7 +194,7 @@
         <div class="login-subtitle">Usuário registrado no Beta! Libere o acesso no Console do Firebase.</div>
         <div style="width:100%; max-width:400px;">
             <button class="btn btn-primary" onclick="window.location.reload()">VERIFICAR ACESSO</button>
-            <button class="btn btn-text" style="margin-top:15px; width:100%;" onclick="showLogoutModal()">Sair da Conta</button>
+            <button class="btn btn-text" style="margin-top:15px; width:100%;" onclick="auth.signOut()">Sair da Conta</button>
         </div>
     </div>
 
@@ -235,7 +204,7 @@
                 <span style="font-size: 10px; color: var(--text-gray); display: block;">Olá,</span>
                 <span id="user-email-display" style="font-size: 12px; font-weight: bold; color: var(--primary-color);">...</span>
             </div>
-            <button class="btn-logout-new" onclick="showLogoutModal()">
+            <button class="btn-logout-new" onclick="auth.signOut()">
                 <span>🚪 Sair</span>
             </button>
         </div>
@@ -249,13 +218,11 @@
             <button class="btn-icon-nav" onclick="changeMonth(1)">▶</button>
         </div>
         
-        <div class="summary-grid" id="main-dashboard-grid">
-            </div>
+        <div class="summary-grid" id="main-dashboard-grid"></div>
 
         <div class="performance-section">
             <div class="section-title">Performance Mensal</div>
-            <div class="perf-grid" id="main-perf-grid">
-                </div>
+            <div class="perf-grid" id="main-perf-grid"></div>
         </div>
     </div>
 
@@ -264,19 +231,15 @@
             <h2 style="font-size:24px; font-weight:700;">Gráficos</h2>
             <p style="color:#666; font-size:12px;">Análise visual de faturamentos</p>
         </div>
-
         <div class="filter-container">
             <button class="filter-btn active" onclick="updateChartFilter('dia', this)">Dias</button>
             <button class="filter-btn" onclick="updateChartFilter('semana', this)">Semanas</button>
             <button class="filter-btn" onclick="updateChartFilter('mes', this)">Mês</button>
         </div>
-
         <div class="chart-wrapper">
             <canvas id="revenueChart"></canvas>
         </div>
-
-        <div class="summary-grid" id="chart-summary-grid">
-            </div>
+        <div class="summary-grid" id="chart-summary-grid"></div>
     </div>
 
     <div id="view-history" class="hidden">
@@ -289,13 +252,10 @@
 
     <div id="view-day-detail" class="hidden">
         <div class="detail-header" style="padding: 20px; display: flex; align-items: center; border-bottom: 1px solid #333; background: #111;">
-            <button class="btn-back" onclick="handleBackButton()" style="background: none; border: none; font-size: 24px; color: #fff; margin-right: 15px; cursor: pointer;">←</button>
+            <button class="btn-back" onclick="document.getElementById('view-day-detail').classList.add('hidden')" style="background: none; border: none; font-size: 24px; color: #fff; margin-right: 15px; cursor: pointer;">←</button>
             <h2 id="detail-title">Detalhes do Dia</h2>
-            <button class="btn-text" onclick="editCurrentDay()" style="margin-left:auto; color:var(--primary-color);">✏️ Editar</button>
         </div>
-        <div class="summary-grid" id="day-detail-grid" style="margin-top:10px;">
-            </div>
-
+        <div class="summary-grid" id="day-detail-grid" style="margin-top:10px;"></div>
         <div class="performance-section">
             <div class="section-title">Estatísticas do Dia</div>
             <div class="perf-grid" id="day-perf-grid"></div>
@@ -309,71 +269,153 @@
         <button class="nav-btn" id="nav-chart" onclick="switchTab('charts')" style="background: none; border: none; color: #666; font-size: 10px; display: flex; flex-direction: column; align-items: center;">
             <span class="nav-icon" style="font-size: 20px; margin-bottom: 4px;">📊</span>Gráficos
         </button>
-        <button class="add-btn" onclick="startWizard()" style="background: var(--primary-color); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #000; margin-top: -25px; border: 4px solid #000; box-shadow: 0 4px 12px rgba(0,230,118,0.4);">+</button>
+        <button class="add-btn" onclick="alert('Função Wizard em desenvolvimento')" style="background: var(--primary-color); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #000; margin-top: -25px; border: 4px solid #000; box-shadow: 0 4px 12px rgba(0,230,118,0.4);">+</button>
         <button class="nav-btn" id="nav-hist" onclick="switchTab('history')" style="background: none; border: none; color: #666; font-size: 10px; display: flex; flex-direction: column; align-items: center;">
             <span class="nav-icon" style="font-size: 20px; margin-bottom: 4px;">📂</span>Histórico
         </button>
     </div>
 
     <script>
-        // Configurações Globais
+        // --- VARIÁVEIS GLOBAIS ---
+        let auth, db;
         const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
         const DB_KEY = 'app_motorista_BETA_FULL';
         let viewDate = new Date();
         let currentChart = null;
+        window.isRegisterMode = false;
 
+        // --- CONFIGURAÇÃO FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCjPBa7QRMxkXlxVgLUSIPelpeF1o3YJyk",
+            authDomain: "gestao-motorista-beta.firebaseapp.com",
+            projectId: "gestao-motorista-beta",
+            storageBucket: "gestao-motorista-beta.firebasestorage.app",
+            messagingSenderId: "230375051149",
+            appId: "1:230375051149:web:3b77ea02bf91a523a0b7c4",
+            measurementId: "G-9WC869PBHC"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        auth = firebase.auth();
+        db = firebase.firestore();
+
+        // --- FUNÇÕES DE AUTENTICAÇÃO CORRIGIDAS ---
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('login-pass');
+            const toggleBtn = document.getElementById('toggle-password');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                toggleBtn.innerText = '🔒';
+            } else {
+                passInput.type = 'password';
+                toggleBtn.innerText = '👁️';
+            }
+        }
+
+        function toggleAuthMode() {
+            window.isRegisterMode = !window.isRegisterMode;
+            const btnMain = document.getElementById('btn-main-action');
+            const txtToggle = document.getElementById('txt-toggle');
+            const btnToggle = document.getElementById('btn-toggle');
+            
+            if (window.isRegisterMode) {
+                btnMain.innerText = "CRIAR CONTA";
+                txtToggle.innerText = "Já tem conta?";
+                btnToggle.innerText = "Fazer Login";
+            } else {
+                btnMain.innerText = "ENTRAR";
+                txtToggle.innerText = "Não tem conta?";
+                btnToggle.innerText = "Criar agora";
+            }
+        }
+
+        window.handleAuthAction = function() {
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-pass').value;
+            const btn = document.getElementById('btn-main-action');
+
+            if (!email || !pass) {
+                alert("Por favor, preencha todos os campos.");
+                return;
+            }
+
+            btn.innerText = "Processando...";
+            btn.disabled = true;
+
+            if (window.isRegisterMode) {
+                auth.createUserWithEmailAndPassword(email, pass)
+                    .then(cred => {
+                        return db.collection("users").doc(cred.user.uid).set({
+                            email: email,
+                            history: [],
+                            rentConfigs: {},
+                            autorizado: false
+                        });
+                    })
+                    .catch(e => {
+                        alert("Erro ao criar conta: " + e.message);
+                        btn.disabled = false;
+                        btn.innerText = "CRIAR CONTA";
+                    });
+            } else {
+                auth.signInWithEmailAndPassword(email, pass)
+                    .catch(e => {
+                        alert("Erro no login: " + e.message);
+                        btn.disabled = false;
+                        btn.innerText = "ENTRAR";
+                    });
+            }
+        };
+
+        function initAuthObserver() {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('user-email-display').innerText = user.email.split('@')[0];
+                    
+                    db.collection("users").doc(user.uid).onSnapshot((doc) => {
+                        if (doc.exists) {
+                            const data = doc.data();
+                            if (data.autorizado === true) {
+                                document.getElementById('wait-screen').classList.add('hidden');
+                                document.getElementById('view-dashboard').classList.remove('hidden');
+                                renderDashboard();
+                            } else {
+                                document.getElementById('view-dashboard').classList.add('hidden');
+                                document.getElementById('wait-screen').classList.remove('hidden');
+                            }
+                        }
+                    });
+                } else {
+                    document.getElementById('login-screen').classList.remove('hidden');
+                    document.getElementById('view-dashboard').classList.add('hidden');
+                    document.getElementById('wait-screen').classList.add('hidden');
+                    document.getElementById('btn-main-action').disabled = false;
+                    document.getElementById('btn-main-action').innerText = window.isRegisterMode ? "CRIAR CONTA" : "ENTRAR";
+                }
+            });
+        }
+
+        // --- LÓGICA DO APP (DASHBOARD/GRAFICOS/HISTORICO) ---
         function getDB() { try { return JSON.parse(localStorage.getItem(DB_KEY)) || []; } catch { return []; } }
         function formatMoney(n) { return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-        // --- FUNÇÃO DE RENDERIZAÇÃO DE CARDS PADRONIZADOS ---
         function generateCardsHTML(data) {
             const { tRev, profit, tExp, tFuel, tFood, tMaint, tRent } = data;
             const calcPct = (val) => tRev > 0 ? ((val / tRev) * 100).toFixed(1) + '%' : '0%';
-            
             return `
-                <div class="card-main">
-                    <span class="label">Faturamento Bruto</span>
-                    <div class="value-big">${formatMoney(tRev)}</div>
-                </div>
-                <div class="card-small">
-                    <span class="label">Lucro Líquido</span>
-                    <div class="value-med text-green">${formatMoney(profit)}</div>
-                    <div class="pct-tag text-green">${calcPct(profit)}</div>
-                </div>
-                <div class="card-small">
-                    <span class="label">Custo Total</span>
-                    <div class="value-med text-red">${formatMoney(tExp)}</div>
-                    <div class="pct-tag text-red">${calcPct(tExp)}</div>
-                </div>
-                <div class="card-small">
-                    <span class="label">⛽ Combustível</span>
-                    <div class="value-med text-orange">${formatMoney(tFuel)}</div>
-                    <div class="pct-tag text-orange">${calcPct(tFuel)}</div>
-                </div>
-                <div class="card-small">
-                    <span class="label">🍔 Alimentação</span>
-                    <div class="value-med text-red">${formatMoney(tFood)}</div>
-                    <div class="pct-tag text-red">${calcPct(tFood)}</div>
-                </div>
-                <div class="card-small">
-                    <span class="label">🛠️ Manutenção</span>
-                    <div class="value-med text-red">${formatMoney(tMaint)}</div>
-                    <div class="pct-tag text-red">${calcPct(tMaint)}</div>
-                </div>
-                <div class="card-small">
-                    <span class="label">🟣 Aluguel Pago</span>
-                    <div class="value-med text-purple">${formatMoney(tRent)}</div>
-                    <div class="pct-tag text-purple">${calcPct(tRent)}</div>
-                </div>
+                <div class="card-main"><span class="label">Faturamento Bruto</span><div class="value-big">${formatMoney(tRev)}</div></div>
+                <div class="card-small"><span class="label">Lucro Líquido</span><div class="value-med text-green">${formatMoney(profit)}</div><div class="pct-tag text-green">${calcPct(profit)}</div></div>
+                <div class="card-small"><span class="label">Custo Total</span><div class="value-med text-red">${formatMoney(tExp)}</div><div class="pct-tag text-red">${calcPct(tExp)}</div></div>
             `;
         }
 
-        // --- LÓGICA DE NAVEGAÇÃO ---
         function switchTab(tab) {
             document.getElementById('view-dashboard').classList.add('hidden');
             document.getElementById('view-history').classList.add('hidden');
             document.getElementById('view-charts').classList.add('hidden');
-            
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
             if(tab === 'home') {
@@ -383,7 +425,7 @@
             } else if(tab === 'charts') {
                 document.getElementById('view-charts').classList.remove('hidden');
                 document.getElementById('nav-chart').classList.add('active');
-                updateChartFilter('dia'); // Inicia com filtro de dia
+                updateChartFilter('dia');
             } else if(tab === 'history') {
                 document.getElementById('view-history').classList.remove('hidden');
                 document.getElementById('nav-hist').classList.add('active');
@@ -391,122 +433,6 @@
             }
         }
 
-        // --- LÓGICA DE GRÁFICOS ---
-        function updateChartFilter(periodo, btn) {
-            if(btn) {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-            }
-
-            const db = getDB();
-            let labels = [];
-            let values = [];
-            let stats = { tRev:0, profit:0, tExp:0, tFuel:0, tFood:0, tMaint:0, tRent:0 };
-
-            // Lógica simplificada de agrupamento
-            const last7 = db.slice(0, 7).reverse(); // Dias
-            
-            if(periodo === 'dia') {
-                last7.forEach(d => {
-                    labels.push(d.date.split('/')[0]);
-                    const rev = (d.uber||0) + (d.pop||0);
-                    values.push(rev);
-                    stats.tRev += rev;
-                    stats.tFuel += (d.fuel||0);
-                    stats.tFood += (d.food||0);
-                    stats.tMaint += (d.maintenance||0);
-                    stats.tRent += (d.rentPaid||0);
-                });
-            } else if (periodo === 'mes') {
-                // Agrupa os últimos 6 meses
-                const meses = {};
-                db.forEach(d => {
-                    const p = d.date.split('/');
-                    const key = `${monthNames[p[1]-1]}`;
-                    if(!meses[key]) meses[key] = 0;
-                    meses[key] += (d.uber||0) + (d.pop||0);
-                    // Acumula stats gerais para o período
-                    stats.tRev += (d.uber||0) + (d.pop||0);
-                    stats.tFuel += (d.fuel||0); stats.tFood += (d.food||0);
-                    stats.tMaint += (d.maintenance||0); stats.tRent += (d.rentPaid||0);
-                });
-                labels = Object.keys(meses).slice(-6);
-                values = Object.values(meses).slice(-6);
-            } else {
-                // Mock para semana (últimas 4 semanas baseadas no DB)
-                labels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'];
-                values = [stats.tRev * 0.2, stats.tRev * 0.3, stats.tRev * 0.25, stats.tRev * 0.25];
-            }
-
-            stats.tExp = stats.tFuel + stats.tFood + stats.tMaint + stats.tRent;
-            stats.profit = stats.tRev - stats.tExp;
-
-            renderCanvasChart(labels, values);
-            document.getElementById('chart-summary-grid').innerHTML = generateCardsHTML(stats);
-        }
-
-        function renderCanvasChart(labels, data) {
-            const ctx = document.getElementById('revenueChart').getContext('2d');
-            if(currentChart) currentChart.destroy();
-
-            currentChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Faturamento',
-                        data: data,
-                        backgroundColor: '#00E676',
-                        borderRadius: 5,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { grid: { color: '#222' }, border: { display: false }, ticks: { color: '#666', font: { size: 10 } } },
-                        x: { grid: { display: false }, ticks: { color: '#fff', font: { size: 11, weight: 'bold' } } }
-                    }
-                }
-            });
-        }
-
-        // --- ATUALIZAÇÃO DO HISTÓRICO (DETALHES DO DIA) ---
-        function openDayDetail(index) {
-            window.history.pushState({modal: 'detail'}, "", "");
-            const d = getDB()[index];
-            if(!d) return;
-
-            const tRev = (d.uber||0) + (d.pop||0);
-            const tFuel = d.fuel||0;
-            const tFood = d.food||0;
-            const tMaint = d.maintenance||0;
-            const tRent = d.rentPaid||0;
-            const tExp = tFuel + tFood + tMaint + tRent;
-            const profit = tRev - tExp;
-
-            document.getElementById('detail-title').innerText = `Detalhes: ${d.date}`;
-            
-            // Renderiza cards com a nova lógica padronizada
-            document.getElementById('day-detail-grid').innerHTML = generateCardsHTML({
-                tRev, profit, tExp, tFuel, tFood, tMaint, tRent
-            });
-
-            // Performance do Dia
-            let h = d.hours || 0;
-            if(!h && d.hoursFormatted) { const [hh,mm] = d.hoursFormatted.split(':').map(Number); h = hh + (mm/60); }
-            
-            document.getElementById('day-perf-grid').innerHTML = `
-                <div class="card-perf"><span class="perf-icon">⏱️</span><span class="label">Horas</span><span class="perf-val">${h.toFixed(1)}h</span></div>
-                <div class="card-perf"><span class="perf-icon">💎</span><span class="label">G/Hora</span><span class="perf-val text-green">${formatMoney(h > 0 ? profit / h : 0)}</span></div>
-                <div class="card-perf"><span class="perf-icon">🛣️</span><span class="label">R$/KM</span><span class="perf-val text-blue">${formatMoney((d.km||0) > 0 ? tRev / d.km : 0)}</span></div>
-            `;
-
-            document.getElementById('view-day-detail').classList.remove('hidden');
-        }
-
-        // --- DASHBOARD INICIAL ---
         function renderDashboard() {
             const dbArr = getDB(); 
             const m = viewDate.getMonth(), y = viewDate.getFullYear();
@@ -520,30 +446,23 @@
             
             let stats = { tRev:0, tFuel:0, tFood:0, tRent:0, tHours:0, tKm:0, tMaint:0 };
             data.forEach(item => {
-                stats.tFuel += (item.fuel||0); stats.tFood += (item.food||0); 
-                stats.tRent += (item.rentPaid||0); stats.tMaint += (item.maintenance||0);
-                stats.tRev += (item.uber||0) + (item.pop||0); stats.tKm += (item.km||0);
-                let h = item.hours || 0;
-                if(!h && item.hoursFormatted) { const [hh,mm] = item.hoursFormatted.split(':').map(Number); h = hh + (mm/60); }
-                stats.tHours += h;
+                stats.tRev += (item.uber||0) + (item.pop||0);
+                stats.tFuel += (item.fuel||0); stats.tFood += (item.food||0);
             });
 
             stats.tExp = stats.tFuel + stats.tFood + stats.tRent + stats.tMaint;
             stats.profit = stats.tRev - stats.tExp;
-
             document.getElementById('main-dashboard-grid').innerHTML = generateCardsHTML(stats);
-            
-            // Performance
-            document.getElementById('main-perf-grid').innerHTML = `
-                <div class="card-perf"><span class="perf-icon">⏱️</span><span class="label">Horas</span><span class="perf-val">${stats.tHours.toFixed(1)}h</span></div>
-                <div class="card-perf"><span class="perf-icon">💎</span><span class="label">G/Hora</span><span class="perf-val text-green">${formatMoney(stats.tHours > 0 ? stats.profit / stats.tHours : 0)}</span></div>
-                <div class="card-perf"><span class="perf-icon">🛣️</span><span class="label">R$/KM</span><span class="perf-val text-blue">${formatMoney(stats.tKm > 0 ? stats.tRev / stats.km : 0)}</span></div>
-            `;
         }
 
-        // Funções de apoio (Mantenha as que já existem no seu código para Auth, Firebase e Wizard)
-        // ... (changeMonth, handleAuthAction, etc) ...
+        function changeMonth(dir) {
+            viewDate.setMonth(viewDate.getMonth() + dir);
+            renderDashboard();
+        }
 
+        window.addEventListener('load', () => {
+            initAuthObserver();
+        });
     </script>
 </body>
 </html>
