@@ -57,7 +57,7 @@
             position: fixed; 
             top: 0; left: 0; 
             width: 100%; height: 100%; 
-            background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95)), url('https://source.unsplash.com/random/1080x1920/?luxury-car,night,neon'); 
+            background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95)), url('https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1000&auto=format&fit=crop'); 
             background-size: cover; 
             background-position: center; 
             z-index: 9999; 
@@ -109,37 +109,73 @@
         .month-selector span { font-size: 12px; color: var(--text-gray); }
 
         .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px 20px; }
-        .card-main { grid-column: span 2; background: linear-gradient(180deg, #1c1c1e 0%, #111 100%); padding: 24px; border-radius: 18px; text-align: center; border: 1px solid #333; }
-        .card-rent-config { 
+        
+        /* DESIGN PREMIUM CARD PRINCIPAL */
+        .card-main { 
             grid-column: span 2; 
-            background: rgba(191, 90, 242, 0.1); 
-            border: 1px solid var(--rent-color); 
-            padding: 16px; 
-            border-radius: 16px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            cursor: pointer; 
-            transition: 0.2s; 
+            background: linear-gradient(145deg, #242426 0%, #111112 100%); 
+            padding: 24px; 
+            border-radius: 20px; 
+            text-align: center; 
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
         }
         
-        .rent-info-left { display: flex; flex-direction: column; align-items: flex-start; text-align: left; width: 60%; }
-        .rent-info-right { text-align: right; width: 40%; }
-        .card-small { background: var(--card-color); padding: 16px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;}
-        .label { font-size: 11px; color: var(--text-gray); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .value-big { font-size: 36px; font-weight: 800; color: var(--primary-color); margin: 5px 0; }
-        .value-med { font-size: 18px; font-weight: 700; }
+        /* DESIGN PREMIUM CARD ALUGUEL COM BARRA */
+        .card-rent-config { 
+            grid-column: span 2; 
+            background: rgba(191, 90, 242, 0.08); 
+            border: 1px solid rgba(191, 90, 242, 0.3); 
+            padding: 20px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            backdrop-filter: blur(10px);
+        }
 
-        .performance-section { padding: 0 20px; margin-top: 10px; margin-bottom: 20px; }
-        .section-title { font-size: 14px; color: var(--text-gray); margin-bottom: 10px; text-transform: uppercase; }
+        .rent-progress-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin: 12px 0;
+            overflow: hidden;
+        }
+
+        .rent-progress-bar {
+            height: 100%;
+            background: var(--rent-color);
+            width: 0%; /* Dinâmico */
+            border-radius: 4px;
+            transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 10px var(--rent-color);
+        }
+        
+        .card-small { 
+            background: var(--card-color); 
+            padding: 16px; 
+            border-radius: 18px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .label { font-size: 11px; color: var(--text-gray); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+        .value-big { font-size: 38px; font-weight: 900; color: var(--primary-color); margin: 5px 0; letter-spacing: -1px; }
+        .value-med { font-size: 19px; font-weight: 700; }
+
+        .performance-section { padding: 0 20px; margin-top: 15px; margin-bottom: 25px; }
+        .section-title { font-size: 13px; color: var(--text-gray); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
         .perf-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-        .card-perf { background: #2c2c2e; padding: 12px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .perf-val { font-size: 16px; font-weight: bold; color: #fff; margin-top: 5px; }
-        .perf-icon { font-size: 20px; margin-bottom: 5px; }
+        .card-perf { background: #1c1c1e; padding: 14px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; text-align: center; border: 1px solid rgba(255,255,255,0.03); }
+        .perf-val { font-size: 15px; font-weight: 800; color: #fff; margin-top: 6px; }
+        .perf-icon { font-size: 22px; margin-bottom: 2px; }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; }
 
-        /* AJUSTE TELA DETALHES */
         #view-day-detail {
             position: fixed;
             top: 0;
@@ -213,25 +249,36 @@
         
         <div class="summary-grid">
             <div class="card-rent-config" onclick="openRentConfig()">
-                <div class="rent-info-left">
-                    <span style="font-weight:bold; color:var(--rent-color); font-size:12px; display:block;">🟣 PLANO DE ALUGUEL</span>
-                    <span style="color:#aaa; font-size:11px;">Toque para definir folgas</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div>
+                        <span style="font-weight:bold; color:var(--rent-color); font-size:11px; display:block; text-transform: uppercase; letter-spacing: 1px;">🟣 Progresso do Aluguel</span>
+                        <span id="dash-rent-status-text" style="color:#aaa; font-size:11px;">Carregando meta...</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span id="dash-rent-pct-text" style="font-weight:900; font-size:22px; color:#fff;">0%</span>
+                    </div>
                 </div>
-                <div class="rent-info-right">
-                    <span style="font-size:11px; color:#aaa;">Total do Mês</span><br>
-                    <span style="font-weight:800; font-size:18px; color:#fff;" id="dash-rent-target">R$ 0</span>
+                <div class="rent-progress-container">
+                    <div class="rent-progress-bar" id="dash-rent-progress-bar"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                    <span style="color: #666;">Total: <span id="dash-rent-total-label" style="color:#fff; font-weight:bold;">R$ 0</span></span>
+                    <span style="color: #666;">Pago: <span id="dash-rent-paid-label" style="color:var(--rent-color); font-weight:bold;">R$ 0</span></span>
                 </div>
             </div>
+
             <div class="card-main">
-                <span class="label">Lucro Líquido (Mês)</span>
+                <span class="label">Lucro Líquido do Mês</span>
                 <div class="value-big" id="dash-profit">R$ 0,00</div>
+                <div style="font-size: 11px; color: var(--text-gray); margin-top: 5px;">Descontando todas as despesas</div>
             </div>
+
             <div class="card-small">
                 <span class="label">Receita Total</span>
                 <div class="value-med text-green" id="dash-rev">R$ 0,00</div>
             </div>
             <div class="card-small">
-                <span class="label">Despesas Totais</span>
+                <span class="label">Custo Total</span>
                 <div class="value-med text-red" id="dash-exp">R$ 0,00</div>
             </div>
             <div class="card-small">
@@ -239,7 +286,7 @@
                 <div class="value-med text-orange" id="dash-fuel-val">R$ 0,00</div>
             </div>
             <div class="card-small">
-                <span class="label">⛽ % Comb. Mês</span>
+                <span class="label">⛽ % Receita</span>
                 <div class="value-med text-orange" id="dash-fuel-pct">0%</div>
             </div>
             <div class="card-small">
@@ -250,23 +297,19 @@
                 <span class="label">🛠️ Manutenção</span>
                 <div class="value-med text-red" id="dash-maint-val">R$ 0,00</div>
             </div>
-            <div class="card-small">
-                <span class="label">🟣 Aluguel (Pago)</span>
-                <div class="value-med text-purple" id="dash-rent-val">R$ 0,00</div>
-            </div>
         </div>
 
         <div class="performance-section">
-            <div class="section-title">Estatísticas do Mês</div>
+            <div class="section-title">Performance Mensal</div>
             <div class="perf-grid">
                 <div class="card-perf">
                     <span class="perf-icon">⏱️</span>
-                    <span class="label">Horas/Mês</span>
+                    <span class="label">Horas</span>
                     <span class="perf-val" id="dash-hours">0h</span>
                 </div>
                 <div class="card-perf">
                     <span class="perf-icon">💎</span>
-                    <span class="label">Ganho/Hora</span>
+                    <span class="label">G/Hora</span>
                     <span class="perf-val text-green" id="dash-hourly">R$ 0</span>
                 </div>
                 <div class="card-perf">
@@ -311,7 +354,7 @@
                 <div class="value-med text-green" id="day-rev">R$ 0,00</div>
             </div>
             <div class="card-small">
-                <span class="label">Despesas Totais</span>
+                <span class="label">Custo Total</span>
                 <div class="value-med text-red" id="day-exp">R$ 0,00</div>
             </div>
             <div class="card-small">
@@ -337,12 +380,12 @@
             <div class="perf-grid">
                 <div class="card-perf">
                     <span class="perf-icon">⏱️</span>
-                    <span class="label">Horas/Dia</span>
+                    <span class="label">Horas</span>
                     <span class="perf-val" id="day-hours">0h</span>
                 </div>
                 <div class="card-perf">
                     <span class="perf-icon">💎</span>
-                    <span class="label">Ganho/Hora</span>
+                    <span class="label">G/Hora</span>
                     <span class="perf-val text-green" id="day-hourly">R$ 0</span>
                 </div>
                 <div class="card-perf">
@@ -455,7 +498,6 @@
         const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
         let currentStep = 0, tempData = {}, viewDate = new Date(), editingIndex = null, currentDetailIndex = null;
         
-        /* --- ISOLAMENTO BETA --- */
         const DB_KEY = 'app_motorista_BETA_FULL'; 
         const RENT_DB_KEY = 'rent_configs_BETA';
 
@@ -474,7 +516,6 @@
             }
         }
 
-        /* --- LÓGICA DE LOGOUT --- */
         function showLogoutModal() {
             document.getElementById('modal-logout').classList.remove('hidden');
             window.history.pushState({modal: 'logout'}, "", "");
@@ -595,14 +636,24 @@
             document.getElementById('dash-exp').innerText = formatMoney(tFuel + tFood + tRent + tMaint);
             document.getElementById('dash-fuel-val').innerText = formatMoney(tFuel);
             document.getElementById('dash-food-val').innerText = formatMoney(tFood);
-            document.getElementById('dash-rent-val').innerText = formatMoney(tRent);
             document.getElementById('dash-maint-val').innerText = formatMoney(tMaint);
             document.getElementById('dash-hours').innerText = tHours.toFixed(1) + "h";
             document.getElementById('dash-hourly').innerText = formatMoney(tHours > 0 ? profit / tHours : 0);
             document.getElementById('dash-km-val').innerText = formatMoney(tKm > 0 ? tRev / tKm : 0);
             document.getElementById('dash-fuel-pct').innerText = (tRev > 0 ? (tFuel / tRev) * 100 : 0).toFixed(1) + '%';
+            
+            // Lógica de Atualização da Barra de Progresso do Aluguel
             const currentMonthConfig = getRentConfigForMonth(m, y);
-            document.getElementById('dash-rent-target').innerText = formatMoney(currentMonthConfig.total);
+            const rentTarget = currentMonthConfig.total || 0;
+            const rentPct = rentTarget > 0 ? Math.min(100, (tRent / rentTarget) * 100) : 0;
+            
+            document.getElementById('dash-rent-pct-text').innerText = Math.floor(rentPct) + "%";
+            document.getElementById('dash-rent-progress-bar').style.width = rentPct + "%";
+            document.getElementById('dash-rent-total-label').innerText = formatMoney(rentTarget);
+            document.getElementById('dash-rent-paid-label').innerText = formatMoney(tRent);
+            
+            const remaining = Math.max(0, rentTarget - tRent);
+            document.getElementById('dash-rent-status-text').innerText = remaining > 0 ? `Faltam ${formatMoney(remaining)}` : "Aluguel Quitado! 🎉";
         }
 
         function openDayDetail(index) {
@@ -735,6 +786,7 @@
         function askDelete(i) { itemToDeleteIndex = i; document.getElementById('modal-delete').classList.remove('hidden'); }
         function closeDeleteModal() { document.getElementById('modal-delete').classList.add('hidden'); }
         function confirmDelete() { const db = getDB(); db.splice(itemToDeleteIndex,1); saveDB(db); if(window.syncToCloud) window.syncToCloud(); closeDeleteModal(); renderHistory(); renderDashboard(); closeDayDetail(); }
+        
         function toggleAuthMode() {
             window.isRegisterMode = !window.isRegisterMode;
             const btnMain = document.getElementById('btn-main-action'), txtToggle = document.getElementById('txt-toggle'), btnToggle = document.getElementById('btn-toggle');
@@ -742,7 +794,6 @@
             else { btnMain.innerText = "ENTRAR"; txtToggle.innerText = "Não tem conta?"; btnToggle.innerText = "Criar agora"; }
         }
 
-        /* --- CREDENCIAIS DO FIREBASE BETA EXTRAÍDAS DOS SEUS PRINTS --- */
         const firebaseConfig = {
             apiKey: "AIzaSyCjPBa7QRMxkXlxVgLUSIPelpeF1o3YJyk",
             authDomain: "gestao-motorista-beta.firebaseapp.com",
