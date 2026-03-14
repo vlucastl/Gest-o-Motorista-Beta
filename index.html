@@ -417,17 +417,60 @@
     </div>
 
     <div id="view-day-detail" class="hidden">
-        <div class="detail-header" style="padding: 20px; display: flex; align-items: center; border-bottom: 1px solid #333; background: #111;">
-            <button class="btn-back" onclick="handleBackButton()" style="background: none; border: none; font-size: 24px; color: #fff; margin-right: 15px; cursor: pointer;">←</button>
-            <h2 id="detail-title" style="font-size: 18px;">Detalhes</h2>
-            <button class="btn-text" onclick="editCurrentDay()" style="margin-left:auto; color:var(--primary-color); font-weight:bold;">✏️ Editar</button>
+        <div class="header-nav">
+            <button class="btn-back" onclick="closeDayDetail()" style="background: none; border: none; font-size: 24px; color: #fff; cursor: pointer;">←</button>
+            <div style="text-align: center; flex: 1;">
+                <span style="font-size: 10px; color: var(--text-gray); display: block;">Resumo do Dia</span>
+                <span id="detail-day-label" style="font-size: 14px; font-weight: bold; color: var(--primary-color);">00/00/0000</span>
+            </div>
+            <button class="btn-text" onclick="editCurrentDay()" style="color:var(--primary-color); font-weight:bold;">✏️</button>
         </div>
-        <div class="summary-grid" id="detail-summary-grid" style="margin-top:15px;"></div>
+
+        <div class="summary-grid">
+            <div class="card-main">
+                <span class="label">Faturamento Bruto</span>
+                <div class="value-big" id="day-rev-val">R$ 0,00</div>
+            </div>
+
+            <div class="card-small">
+                <span class="label">Lucro Líquido</span>
+                <div class="value-med text-green" id="day-profit-val">R$ 0,00</div>
+            </div>
+
+            <div class="card-small">
+                <span class="label">Custo Total</span>
+                <div class="value-med text-red" id="day-exp-val">R$ 0,00</div>
+            </div>
+
+            <div class="card-small">
+                <span class="label">⛽ Combustível</span>
+                <div class="value-med text-orange" id="day-fuel-val-card">R$ 0,00</div>
+            </div>
+
+            <div class="card-small">
+                <span class="label">🟣 Aluguel Pago</span>
+                <div class="value-med text-purple" id="day-rent-val-card">R$ 0,00</div>
+            </div>
+        </div>
+
         <div class="performance-section">
+            <div class="section-title">Performance do Dia</div>
             <div class="perf-grid">
-                <div class="card-perf"><span class="label">Horas</span><span class="perf-val" id="day-hours">0h</span></div>
-                <div class="card-perf"><span class="label">G/Hora</span><span class="perf-val text-green" id="day-hourly">R$ 0</span></div>
-                <div class="card-perf"><span class="label">R$/KM</span><span class="perf-val text-blue" id="day-km-val">R$ 0</span></div>
+                <div class="card-perf">
+                    <span class="perf-icon">⏱️</span>
+                    <span class="label">Horas</span>
+                    <span class="perf-val" id="day-hours-val">0h</span>
+                </div>
+                <div class="card-perf">
+                    <span class="perf-icon">💎</span>
+                    <span class="label">G/Hora</span>
+                    <span class="perf-val text-green" id="day-hourly-val">R$ 0</span>
+                </div>
+                <div class="card-perf">
+                    <span class="perf-icon">🛣️</span>
+                    <span class="label">R$/KM</span>
+                    <span class="perf-val text-blue" id="day-km-val-card">R$ 0</span>
+                </div>
             </div>
         </div>
     </div>
@@ -614,7 +657,7 @@
             document.getElementById('dash-km-val').innerText = formatMoney(tKm > 0 ? tRev / tKm : 0);
         }
 
-        // GRÁFICOS (NOVA LÓGICA SEMANAL/MENSAL)
+        // GRÁFICOS (AJUSTE MENSAL POR SEMANAS)
         function changePeriodCharts(dir) {
             const activeFilter = document.querySelector('.btn-filter.active').id.replace('filter-', '');
             if (activeFilter === 'semanal') {
@@ -675,41 +718,45 @@
                 labelYear.innerText = y;
 
                 const weekMap = {};
-                db.filter(d => {
+                
+                // Filtra dados do mês selecionado
+                const monthData = db.filter(d => {
                     const p = d.date.split('/');
                     return parseInt(p[1])-1 === m && parseInt(p[2]) === y;
-                }).forEach(d => {
+                });
+
+                monthData.forEach(d => {
                     const p = d.date.split('/');
-                    const dateObj = new Date(p[2], p[1]-1, p[0]);
-                    const weekNum = getWeekNumber(dateObj);
-                    const key = `Sem ${weekNum}`;
+                    const dayNum = parseInt(p[0]);
                     
-                    if(!weekMap[key]) weekMap[key] = { rev:0, fuel:0, food:0, maint:0, rent:0, hours:0, km:0 };
+                    // Cálculo da semana do mês
+                    const firstDayOfMonth = new Date(y, m, 1).getDay();
+                    const weekOfMonth = Math.ceil((dayNum + firstDayOfMonth) / 7);
+                    const key = `Sem ${weekOfMonth}`;
+                    
+                    if(!weekMap[key]) weekMap[key] = { rev:0 };
+                    
                     const r = (d.uber||0)+(d.pop||0);
                     let h = d.hours || 0;
                     if(!h && d.hoursFormatted) {
                         const [hh,mm] = d.hoursFormatted.split(':').map(Number);
                         h = hh + (mm/60);
                     }
+
                     weekMap[key].rev += r;
-                    weekMap[key].fuel += (d.fuel||0);
-                    weekMap[key].food += (d.food||0);
-                    weekMap[key].maint += (d.maintenance||0);
-                    weekMap[key].rent += (d.rentPaid||0);
-                    weekMap[key].hours += h;
-                    weekMap[key].km += (d.km||0);
+                    summary.rev += r;
+                    summary.fuel += (d.fuel||0);
+                    summary.food += (d.food||0);
+                    summary.maint += (d.maintenance||0);
+                    summary.rent += (d.rentPaid||0);
+                    summary.hours += h;
+                    summary.km += (d.km||0);
                 });
 
+                // Ordenar e preencher labels/valores
                 Object.keys(weekMap).sort().forEach(k => {
                     labels.push(k);
                     values.push(weekMap[k].rev);
-                    summary.rev += weekMap[k].rev;
-                    summary.fuel += weekMap[k].fuel;
-                    summary.food += weekMap[k].food;
-                    summary.maint += weekMap[k].maint;
-                    summary.rent += weekMap[k].rent;
-                    summary.hours += weekMap[k].hours;
-                    summary.km += weekMap[k].km;
                 });
             }
 
@@ -764,7 +811,7 @@
             if(tab==='history') renderHistory(); 
             else if(tab==='home') renderDashboard();
             else if(tab==='charts') {
-                viewDate = new Date(); // Reseta para hoje ao entrar nos gráficos
+                viewDate = new Date(); 
                 updateChartFilter('semanal');
             }
         }
@@ -777,25 +824,41 @@
             if(!document.getElementById('view-history').classList.contains('hidden') || !document.getElementById('view-charts').classList.contains('hidden')) { switchTab('home'); return; }
         }
 
-        // HISTÓRICO & DETALHES
+        // HISTÓRICO & DETALHES (REESTRUTURADO)
         function openDayDetail(index) {
-            window.history.pushState({modal: 'detail'}, "", ""); currentDetailIndex = index;
-            const d = getDB()[index]; if(!d) return;
-            const rec = (d.uber||0)+(d.pop||0), exp = (d.fuel||0)+(d.food||0)+(d.rentPaid||0)+(d.maintenance||0), luc = rec - exp;
-            document.getElementById('detail-title').innerText = `Dia ${d.date}`;
-            document.getElementById('detail-summary-grid').innerHTML = `
-                <div class="card-main"><span class="label">Faturamento</span><div class="value-big">${formatMoney(rec)}</div></div>
-                <div class="card-small"><span class="label">Lucro</span><div class="value-med text-green">${formatMoney(luc)}</div></div>
-                <div class="card-small"><span class="label">Custo</span><div class="value-med text-red">${formatMoney(exp)}</div></div>
-            `;
-            let h = d.hours || 0; if(!h && d.hoursFormatted) { const [hh,mm] = d.hoursFormatted.split(':').map(Number); h = hh + (mm/60); }
-            document.getElementById('day-hours').innerText = h.toFixed(1) + "h";
-            document.getElementById('day-hourly').innerText = formatMoney(h > 0 ? luc / h : 0);
-            document.getElementById('day-km-val').innerText = formatMoney((d.km||0) > 0 ? rec / d.km : 0);
+            window.history.pushState({modal: 'detail'}, "", ""); 
+            currentDetailIndex = index;
+            const db = getDB();
+            const d = db[index]; 
+            if(!d) return;
+
+            const rec = (d.uber||0)+(d.pop||0);
+            const exp = (d.fuel||0)+(d.food||0)+(d.rentPaid||0)+(d.maintenance||0);
+            const luc = rec - exp;
+
+            let h = d.hours || 0; 
+            if(!h && d.hoursFormatted) { 
+                const [hh,mm] = d.hoursFormatted.split(':').map(Number); 
+                h = hh + (mm/60); 
+            }
+
+            // Popula interface de detalhes idêntica ao dashboard
+            document.getElementById('detail-day-label').innerText = d.date;
+            document.getElementById('day-rev-val').innerText = formatMoney(rec);
+            document.getElementById('day-profit-val').innerText = formatMoney(luc);
+            document.getElementById('day-exp-val').innerText = formatMoney(exp);
+            document.getElementById('day-fuel-val-card').innerText = formatMoney(d.fuel || 0);
+            document.getElementById('day-rent-val-card').innerText = formatMoney(d.rentPaid || 0);
+            
+            document.getElementById('day-hours-val').innerText = h.toFixed(1) + "h";
+            document.getElementById('day-hourly-val').innerText = formatMoney(h > 0 ? luc / h : 0);
+            document.getElementById('day-km-val-card').innerText = formatMoney((d.km||0) > 0 ? rec / d.km : 0);
+
             document.getElementById('view-day-detail').classList.remove('hidden');
         }
 
         function closeDayDetail() { document.getElementById('view-day-detail').classList.add('hidden'); }
+
         function renderHistory() {
             const db = getDB(); const list = document.getElementById('history-list'); list.innerHTML = '';
             const groups = {};
@@ -813,7 +876,11 @@
                 g.items.forEach(d => {
                     const div = document.createElement('div'); div.className = 'history-item';
                     div.style = "background: #1c1c1e; padding: 12px; border-radius: 10px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center;";
-                    div.innerHTML = `<div onclick="openDayDetail(${d.originalIndex})"><b>${d.date}</b><br><small>${formatMoney((d.uber||0)+(d.pop||0))}</small></div><button onclick="askDelete(${d.originalIndex})" class="btn-trash">🗑️</button>`;
+                    div.innerHTML = `
+                        <div onclick="openDayDetail(${d.originalIndex})" style="flex:1;">
+                            <b>${d.date}</b><br><small>${formatMoney((d.uber||0)+(d.pop||0))}</small>
+                        </div>
+                        <button onclick="askDelete(${d.originalIndex})" class="btn-trash">🗑️</button>`;
                     itemsDiv.appendChild(div);
                 });
                 folder.onclick = () => { itemsDiv.style.display = itemsDiv.style.display === 'none' ? 'block' : 'none'; };
@@ -854,6 +921,14 @@
             if(editingIndex!==null) db[editingIndex]=tempData; else db.unshift(tempData);
             saveDB(db); if(window.syncToCloud) window.syncToCloud();
             toggleWizard(false); renderDashboard(); openDayDetail(editingIndex!==null?editingIndex:0);
+        }
+
+        // EDIÇÃO
+        function editCurrentDay() {
+            if(currentDetailIndex !== null) {
+                closeDayDetail();
+                startWizard(currentDetailIndex);
+            }
         }
 
         // ALUGUEL CONFIG
