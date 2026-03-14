@@ -386,17 +386,17 @@
 
     <div id="view-charts" class="hidden">
         <div class="date-navigation-bar">
-            <button class="btn-icon-nav" onclick="changeMonthCharts(-1)">◀</button>
+            <button class="btn-icon-nav" onclick="changePeriodCharts(-1)">◀</button>
             <div class="month-selector">
                 <span id="chart-label-year">2026</span>
                 <h2 id="chart-label-month">JANEIRO</h2>
             </div>
-            <button class="btn-icon-nav" onclick="changeMonthCharts(1)">▶</button>
+            <button class="btn-icon-nav" onclick="changePeriodCharts(1)">▶</button>
         </div>
         
         <div class="filter-container" style="display: flex; gap: 8px; padding: 0 20px; margin-bottom: 20px;">
-            <button class="btn-filter active" id="filter-week" onclick="updateChartFilter('week')">Semanas</button>
-            <button class="btn-filter" id="filter-month" onclick="updateChartFilter('month')">Meses</button>
+            <button class="btn-filter active" id="filter-semanal" onclick="updateChartFilter('semanal')">Semanal</button>
+            <button class="btn-filter" id="filter-mensal" onclick="updateChartFilter('mensal')">Mensal</button>
         </div>
 
         <div style="padding: 0 20px; margin-bottom: 25px;">
@@ -614,12 +614,14 @@
             document.getElementById('dash-km-val').innerText = formatMoney(tKm > 0 ? tRev / tKm : 0);
         }
 
-        // GRÁFICOS (LOGICA NOVA)
-        function changeMonthCharts(dir) {
-            viewDate.setMonth(viewDate.getMonth() + dir);
-            document.getElementById('chart-label-month').innerText = monthNames[viewDate.getMonth()].toUpperCase();
-            document.getElementById('chart-label-year').innerText = viewDate.getFullYear();
+        // GRÁFICOS (NOVA LÓGICA SEMANAL/MENSAL)
+        function changePeriodCharts(dir) {
             const activeFilter = document.querySelector('.btn-filter.active').id.replace('filter-', '');
+            if (activeFilter === 'semanal') {
+                viewDate.setDate(viewDate.getDate() + (dir * 7));
+            } else {
+                viewDate.setMonth(viewDate.getMonth() + dir);
+            }
             updateChartFilter(activeFilter);
         }
 
@@ -627,59 +629,90 @@
             document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`filter-${type}`).classList.add('active');
 
-            const db = [...getDB()].reverse();
+            const db = getDB();
             let labels = [], values = [], summary = { rev:0, fuel:0, food:0, maint:0, rent:0, hours:0, km:0 };
-            const m = viewDate.getMonth(), y = viewDate.getFullYear();
+            
+            const labelMonth = document.getElementById('chart-label-month');
+            const labelYear = document.getElementById('chart-label-year');
 
-            if (type === 'week') {
+            if (type === 'semanal') {
+                const curr = new Date(viewDate);
+                const first = curr.getDate() - curr.getDay(); 
+                const weekStart = new Date(curr.setDate(first));
+                
+                labelYear.innerText = `Semana ${getWeekNumber(weekStart)} de ${weekStart.getFullYear()}`;
+                const weekEnd = new Date(new Date(weekStart).setDate(weekStart.getDate() + 6));
+                labelMonth.innerText = `${weekStart.getDate()}/${weekStart.getMonth()+1} a ${weekEnd.getDate()}/${weekEnd.getMonth()+1}`;
+
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(weekStart);
+                    d.setDate(d.getDate() + i);
+                    const dateStr = d.toLocaleDateString('pt-BR');
+                    const dayData = db.find(item => item.date === dateStr);
+                    
+                    labels.push(dateStr.substring(0, 5)); 
+                    const rev = dayData ? (dayData.uber || 0) + (dayData.pop || 0) : 0;
+                    values.push(rev);
+
+                    if (dayData) {
+                        summary.rev += rev;
+                        summary.fuel += (dayData.fuel || 0);
+                        summary.food += (dayData.food || 0);
+                        summary.maint += (dayData.maintenance || 0);
+                        summary.rent += (dayData.rentPaid || 0);
+                        summary.km += (dayData.km || 0);
+                        let h = dayData.hours || 0;
+                        if(!h && dayData.hoursFormatted) {
+                            const [hh,mm] = dayData.hoursFormatted.split(':').map(Number);
+                            h = hh + (mm/60);
+                        }
+                        summary.hours += h;
+                    }
+                }
+            } else {
+                const m = viewDate.getMonth(), y = viewDate.getFullYear();
+                labelMonth.innerText = monthNames[m].toUpperCase();
+                labelYear.innerText = y;
+
                 const weekMap = {};
                 db.filter(d => {
                     const p = d.date.split('/');
                     return parseInt(p[1])-1 === m && parseInt(p[2]) === y;
                 }).forEach(d => {
-                    const dateParts = d.date.split('/');
-                    const dateObj = new Date(dateParts[2], dateParts[1]-1, dateParts[0]);
+                    const p = d.date.split('/');
+                    const dateObj = new Date(p[2], p[1]-1, p[0]);
                     const weekNum = getWeekNumber(dateObj);
                     const key = `Sem ${weekNum}`;
+                    
                     if(!weekMap[key]) weekMap[key] = { rev:0, fuel:0, food:0, maint:0, rent:0, hours:0, km:0 };
-                    
                     const r = (d.uber||0)+(d.pop||0);
-                    let h = d.hours || 0; if(!h && d.hoursFormatted) { const [hh,mm] = d.hoursFormatted.split(':').map(Number); h = hh + (mm/60); }
-                    
-                    weekMap[key].rev += r; 
-                    weekMap[key].fuel += (d.fuel||0); 
-                    weekMap[key].food += (d.food||0); 
-                    weekMap[key].maint += (d.maintenance||0); 
+                    let h = d.hours || 0;
+                    if(!h && d.hoursFormatted) {
+                        const [hh,mm] = d.hoursFormatted.split(':').map(Number);
+                        h = hh + (mm/60);
+                    }
+                    weekMap[key].rev += r;
+                    weekMap[key].fuel += (d.fuel||0);
+                    weekMap[key].food += (d.food||0);
+                    weekMap[key].maint += (d.maintenance||0);
                     weekMap[key].rent += (d.rentPaid||0);
                     weekMap[key].hours += h;
                     weekMap[key].km += (d.km||0);
                 });
-                Object.keys(weekMap).forEach(k => {
-                    labels.push(k); values.push(weekMap[k].rev);
-                    summary.rev += weekMap[k].rev; summary.fuel += weekMap[k].fuel; summary.food += weekMap[k].food; 
-                    summary.maint += weekMap[k].maint; summary.rent += weekMap[k].rent;
-                    summary.hours += weekMap[k].hours; summary.km += weekMap[k].km;
-                });
-            } else if (type === 'month') {
-                const monthMap = {};
-                db.filter(d => parseInt(d.date.split('/')[2]) === y).forEach(d => {
-                    const p = d.date.split('/');
-                    const key = monthNames[parseInt(p[1])-1].substring(0,3);
-                    if(!monthMap[key]) monthMap[key] = { rev:0, fuel:0, food:0, maint:0, rent:0, hours:0, km:0 };
-                    const r = (d.uber||0)+(d.pop||0);
-                    let h = d.hours || 0; if(!h && d.hoursFormatted) { const [hh,mm] = d.hoursFormatted.split(':').map(Number); h = hh + (mm/60); }
-                    monthMap[key].rev += r; 
-                    monthMap[key].fuel += (d.fuel||0); monthMap[key].food += (d.food||0); 
-                    monthMap[key].maint += (d.maintenance||0); monthMap[key].rent += (d.rentPaid||0);
-                    monthMap[key].hours += h; monthMap[key].km += (d.km||0);
-                });
-                Object.keys(monthMap).forEach(k => {
-                    labels.push(k); values.push(monthMap[k].rev);
-                    summary.rev += monthMap[k].rev; summary.fuel += monthMap[k].fuel; summary.food += monthMap[k].food; 
-                    summary.maint += monthMap[k].maint; summary.rent += monthMap[k].rent;
-                    summary.hours += monthMap[k].hours; summary.km += monthMap[k].km;
+
+                Object.keys(weekMap).sort().forEach(k => {
+                    labels.push(k);
+                    values.push(weekMap[k].rev);
+                    summary.rev += weekMap[k].rev;
+                    summary.fuel += weekMap[k].fuel;
+                    summary.food += weekMap[k].food;
+                    summary.maint += weekMap[k].maint;
+                    summary.rent += weekMap[k].rent;
+                    summary.hours += weekMap[k].hours;
+                    summary.km += weekMap[k].km;
                 });
             }
+
             renderChart(labels, values);
             renderChartSummary(summary);
         }
@@ -730,7 +763,10 @@
             });
             if(tab==='history') renderHistory(); 
             else if(tab==='home') renderDashboard();
-            else if(tab==='charts') changeMonthCharts(0);
+            else if(tab==='charts') {
+                viewDate = new Date(); // Reseta para hoje ao entrar nos gráficos
+                updateChartFilter('semanal');
+            }
         }
 
         function handleBackButton() {
